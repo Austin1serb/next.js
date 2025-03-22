@@ -6,14 +6,15 @@ use serde::{Deserialize, Serialize};
 use turbo_rcstr::RcStr;
 
 use crate::{
-    MagicAny, ResolvedVc, TaskId, TransientInstance, TransientValue, Value, ValueTypeId, Vc,
+    trace::TraceRawVcs, MagicAny, ResolvedVc, TaskId, TransientInstance, TransientValue, Value,
+    ValueTypeId, Vc,
 };
 
 /// Trait to implement in order for a type to be accepted as a
 /// [`#[turbo_tasks::function]`][crate::function] argument.
 ///
 /// See also [`ConcreteTaskInput`].
-pub trait TaskInput: Send + Sync + Clone + Debug + PartialEq + Eq + Hash {
+pub trait TaskInput: Send + Sync + Clone + Debug + PartialEq + Eq + Hash + TraceRawVcs {
     fn resolve_input(&self) -> impl Future<Output = Result<Self>> + Send + '_ {
         async { Ok(self.clone()) }
     }
@@ -161,6 +162,7 @@ where
         + Sync
         + Serialize
         + for<'de> Deserialize<'de>
+        + TraceRawVcs
         + 'static,
 {
     fn is_resolved(&self) -> bool {
@@ -174,7 +176,7 @@ where
 
 impl<T> TaskInput for TransientValue<T>
 where
-    T: MagicAny + Clone + Debug + Hash + Eq + 'static,
+    T: MagicAny + Clone + Debug + Hash + Eq + TraceRawVcs + 'static,
 {
     fn is_transient(&self) -> bool {
         true
@@ -211,7 +213,7 @@ where
 
 impl<T> TaskInput for TransientInstance<T>
 where
-    T: Sync + Send + 'static,
+    T: Sync + Send + TraceRawVcs + 'static,
 {
     fn is_transient(&self) -> bool {
         true
